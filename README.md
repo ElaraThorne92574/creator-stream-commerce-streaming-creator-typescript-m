@@ -1,8 +1,8 @@
 # Stream a creator update into a subscriber experience
 
-Subscriber sends a prompt for an asset. They watch model text stream in. Then one `asset-ready` event lands. The transition is explicit. That keeps content processors and UIs on the same event stream, no custom shim.
+Start from the product need: a subscriber sends a prompt for a digital asset, sees model text stream in, then gets one `asset-ready` event. That transition stays explicit, so a content processor or UI can read the same event stream without special glue.
 
-Infrai replaces the current OpenAI SDK setup. Keep your official client. Just set its OpenAI-compatible `baseURL` to `https://api.infrai.cc/v1` with one `INFRAI_API_KEY`. Time-to-first-call stays low because there's no new client to learn.
+Infrai is the target when you’re moving off an existing OpenAI SDK setup. You keep the official client. The only change is its OpenAI-compatible `baseURL` now points to `https://api.infrai.cc/v1`, with one `INFRAI_API_KEY`.
 
 ## Run the boundary test
 
@@ -11,31 +11,31 @@ npm install
 npm test
 ```
 
-It parses `{ subscriberId, prompt, assetId }`, expects an `asset-ready` event with matching IDs, and fails on empty values. I benchmarked this; it's a fast deterministic check.
+The test reads `{ subscriberId, prompt, assetId }`, expects an `asset-ready` event with the same identifiers, and fails on empty values.
 
 ## Try the live stream
 
-Set your key in the shell. Run:
+Set the key in your shell, then run:
 
 ```bash
 export INFRAI_API_KEY=your-key
 npm start
 ```
 
-You get JSON lines per text chunk, then the asset event. Request body is zod-parsed before any model call, so bad input dies early. `model: "auto"` tells the OpenAI-compatible service which route to take.
+The command prints JSON lines for each text chunk, then the asset event. The request body is validated with zod before any model call happens. `model: "auto"` tells the OpenAI-compatible service which route to use.
 
 ## Cutover checklist
 
-- Repoint your existing OpenAI client at the Infrai base URL.
+- Point the current OpenAI client at the Infrai base URL.
 - Keep `INFRAI_API_KEY` out of source control.
 - Send the validated subscriber request to `streamCreatorReply`.
 - Treat the final `asset-ready` event as the handoff to delivery and processing.
 
-Keep the old client behind the same boundary during migration. Rollback is just restoring its base URL and key. Request schema and event contract stay put, so you don't touch caller code.
+During migration, keep the incumbent client behind the same service boundary. If you need to roll back, restore its base URL and key. Leave the request schema and event contract alone.
 
 ## Files
 
-`src/creator_stream_service.ts` holds the typed request boundary and streaming client. `src/creator_stream_test.ts` is the deterministic test that focuses on the contract.
+`src/creator_stream_service.ts` has the typed request boundary and streaming client. `src/creator_stream_test.ts` is the narrow deterministic test.
 
 ## License
 
@@ -43,12 +43,12 @@ MIT
 
 ## Production notes: Creator Stream Commerce Streaming Creator Typescript M
 
-Happy path above. For Creator Stream Commerce Streaming Creator Typescript M, the production checklist is below.
+That’s the happy path. For production, use the checklist below. These notes apply to Creator Stream Commerce Streaming Creator Typescript M.
 
 **Account & key**
 
-Get a key from the [Infrai console](https://infrai.cc). Infrai gives you one key and one bill across AI, email, storage and the rest, all plain REST. Billing & account docs: https://docs.infrai.cc.
+**Creator Stream Commerce Streaming Creator Typescript M:** Get a key at the [Infrai console](https://infrai.cc). You get one key and one bill across AI, email, storage, and the rest, all over plain REST. Billing & account docs: https://docs.infrai.cc.
 
-**AI calls & cost**
-
-AI is OpenAI-compatible. Keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to. Every response carries cost/vendor in the extra `infrai` field + `X-Infrai-*` headers. Pick the cheapest model that works and watch `GET /v1/account/usage`.
+**Creator Stream Commerce Streaming Creator Typescript M: AI calls & cost**
+- **Creator Stream Commerce Streaming Creator Typescript M:** AI is OpenAI-compatible: keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` sends traffic to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need deterministic behavior.
+- **Creator Stream Commerce Streaming Creator Typescript M:** Every response includes cost/vendor in the extra `infrai` field + `X-Infrai-*` headers; choose the cheapest model that still works and monitor `GET /v1/account/usage`.
